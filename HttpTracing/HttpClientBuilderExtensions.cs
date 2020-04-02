@@ -21,8 +21,24 @@ namespace Microsoft.Extensions.DependencyInjection
         /// A function to allow customization of the evaluation of a successful response.
         /// Defaults to <see cref="HttpResponseMessage.IsSuccessStatusCode"/>.
         /// </param>
+        /// <param name="bufferRequests">
+        /// When set to true, will actively buffer the requests bodies.
+        /// This is to be used when you want to see the content of requests
+        /// when using serializer that are forward-only.
+        /// This will impact performance and memory consumption, but is probably fine if you are
+        /// in a typical run-of-the-mill scenario.
+        /// </param>
+        /// <param name="logger">
+        /// Use a custom <see cref="ILogger"/> instead of the one provided by the <see cref="ILoggerFactory"/>.
+        /// When used, the <paramref name="categoryName"/> is ineffective.
+        /// </param>
         /// <returns>The updated <see cref="IHttpClientBuilder"/>.</returns>
-        public static IHttpClientBuilder AddHttpTracing(this IHttpClientBuilder builder, string categoryName = null, Func<HttpResponseMessage, bool> isResponseSuccessful = null)
+        public static IHttpClientBuilder AddHttpTracing(
+            this IHttpClientBuilder builder,
+            string categoryName = null,
+            Func<HttpResponseMessage, bool> isResponseSuccessful = null,
+            bool bufferRequests = false,
+            ILogger logger = null)
         {
             if (builder is null)
             {
@@ -36,8 +52,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder.AddHttpMessageHandler(
                 sp => new HttpTracingDelegatingHandler(
-                    sp.GetRequiredService<ILoggerFactory>().CreateLogger(categoryName),
-                    isResponseSuccessful));
+                    logger: logger ?? sp.GetRequiredService<ILoggerFactory>().CreateLogger(categoryName),
+                    isResponseSuccessful: isResponseSuccessful,
+                    bufferRequests: bufferRequests));
         }
     }
 }

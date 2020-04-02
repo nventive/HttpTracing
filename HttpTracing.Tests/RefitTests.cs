@@ -2,22 +2,25 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using HttpTracing.Tests.Server;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Refit;
 using Xunit;
 
 namespace HttpTracing.Tests
 {
     [Collection(ServerCollection.Name)]
-    public class HttpTracingDelegatingHandlerTests
+    public class RefitTests
     {
         private readonly ServerFixture _fixture;
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
 
-        public HttpTracingDelegatingHandlerTests(ServerFixture fixture)
+        public RefitTests(ServerFixture fixture)
         {
             _fixture = fixture;
         }
@@ -27,10 +30,9 @@ namespace HttpTracing.Tests
         {
             _loggerMock.Setup(x => x.IsEnabled(LogLevel.Trace))
                 .Returns(true);
-            var client = CreateHttpClient();
+            var client = CreateRefitClient();
 
-            var response = await client.GetAsync($"{ApiController.JsonUri}?name=MyName");
-            var result = await response.Content.ReadAsAsync<SampleModel>();
+            var result = await client.GetJson("MyName");
             result.Name.Should().Be("MyName");
 
             _loggerMock.Verify(x => x.Log(LogLevel.Trace, It.Is<EventId>(e => e.Id == 200), It.IsAny<object>(), null, It.IsAny<Func<object, Exception, string>>()));
@@ -42,14 +44,13 @@ namespace HttpTracing.Tests
         {
             _loggerMock.Setup(x => x.IsEnabled(LogLevel.Trace))
                 .Returns(true);
-            var client = CreateHttpClient();
+            var client = CreateRefitClient();
             var inputModel = new SampleModel
             {
                 Name = "TheName",
             };
 
-            var response = await client.PostAsJsonAsync(ApiController.JsonUri, inputModel);
-            var result = await response.Content.ReadAsAsync<SampleModel>();
+            var result = await client.PostJson(inputModel);
             result.Should().BeEquivalentTo(inputModel);
 
             _loggerMock.Verify(x => x.Log(LogLevel.Trace, It.Is<EventId>(e => e.Id == 200), It.IsAny<object>(), null, It.IsAny<Func<object, Exception, string>>()));
@@ -62,10 +63,9 @@ namespace HttpTracing.Tests
             _loggerMock.Setup(x => x.IsEnabled(LogLevel.Trace))
                 .Returns(false)
                 .Verifiable();
-            var client = CreateHttpClient();
+            var client = CreateRefitClient();
 
-            var response = await client.GetAsync(ApiController.JsonUri);
-            var result = await response.Content.ReadAsAsync<SampleModel>();
+            var result = await client.GetJson();
             result.Name.Should().Be(SampleModel.DefaultName);
 
             _loggerMock.Verify();
@@ -77,9 +77,9 @@ namespace HttpTracing.Tests
         {
             _loggerMock.Setup(x => x.IsEnabled(LogLevel.Trace))
                 .Returns(true);
-            var client = CreateHttpClient();
+            var client = CreateRefitClient();
 
-            var response = await client.GetAsync(ApiController.BinaryUri);
+            var response = await client.GetBinary();
             var result = await response.Content.ReadAsByteArrayAsync();
             result.Should().BeEquivalentTo(await File.ReadAllBytesAsync(typeof(ApiController).Assembly.Location));
 
@@ -92,20 +92,40 @@ namespace HttpTracing.Tests
         {
             _loggerMock.Setup(x => x.IsEnabled(LogLevel.Warning))
                 .Returns(true);
-            var client = CreateHttpClient();
+            var client = CreateRefitClient();
 
-            var response = await client.GetAsync($"{ApiController.StatusCodeUri}?statusCode=500");
+            var response = await client.GetStatus(500);
             response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
 
             _loggerMock.Verify(x => x.Log(LogLevel.Warning, It.Is<EventId>(e => e.Id == 201), It.IsAny<object>(), null, It.IsAny<Func<object, Exception, string>>()));
             _loggerMock.Verify(x => x.Log(LogLevel.Warning, It.Is<EventId>(e => e.Id == 211), It.IsAny<object>(), null, It.IsAny<Func<object, Exception, string>>()));
         }
 
-        private HttpClient CreateHttpClient()
-            => new HttpClient(
-                new HttpTracingDelegatingHandler(_loggerMock.Object) { InnerHandler = new HttpClientHandler() })
-            {
-                BaseAddress = _fixture.ServerUri,
-            };
-    }
+        private IRefitClient CreateRefitClient()
+        {
+            var services = new ServiceCollection();
+            services
+                .AddHttpClient<IRefitClient>(options =>
+                {
+                    options.BaseAddress = _fixture.ServerUri;
+                })
+                .AddHttpTracing(
+                    logger: _loggerMock.Object,
+                    bufferRequests: true);
+
+            services.AddTransient(
+                sp => RestService.For<IRefitClient>(
+                    client: sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(IRefitClient)),
+                    settings: new RefitSettings
+                    {
+                        ContentSerializer = new SystemTextJsonContentSerializer(
+                            new JsonSerializerOptions
+                            {
+                                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            }),
+                    }));
+
+            return services.BuildServiceProvider().GetRequiredService<IRefitClient>();
+        }
+}
 }

@@ -79,6 +79,26 @@ Example within the `appsettings.json` file:
 }
 ```
 
+### Buffering the requests content
+
+Some frameworks uses `HttpContent` streams on `HttpRequestMessage` that cannot be replayed, thus preventing the component
+to read the body of the request in such cases.
+
+The default behavior is to write the following line in lieu of the body:
+```
+[InvalidOperationException: Request content is not buffered (...). Use the bufferRequests parameter to allow the reading.]
+```
+
+If you want to see the request content in such cases, use the `bufferRequests` parameter:
+
+```csharp
+services
+    .AddHttpClient<MyNamedClient>()
+    .AddHttpTracing(bufferRequests: true);
+```
+
+
+
 ## Changelog
 
 Please consult the [CHANGELOG](CHANGELOG.md) for more information about version
