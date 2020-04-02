@@ -127,5 +127,5 @@ namespace HttpTracing.Tests
 
             return services.BuildServiceProvider().GetRequiredService<IRefitClient>();
         }
-}
+    }
 }
