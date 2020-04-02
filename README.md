@@ -4,6 +4,8 @@ Complete tracing of requests / responses for `HttpClient`
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Build Status](https://dev.azure.com/nventive-public/nventive/_apis/build/status/nventive.HttpTracing?branchName=master)](https://dev.azure.com/nventive-public/nventive/_build/latest?definitionId=9&branchName=master)
+![Nuget](https://img.shields.io/nuget/v/HttpTracing)
 
 ## Getting Started
 
