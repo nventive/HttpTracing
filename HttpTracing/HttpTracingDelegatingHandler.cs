@@ -13,12 +13,12 @@ namespace HttpTracing
     public class HttpTracingDelegatingHandler : DelegatingHandler
     {
         /// <summary>
-        /// Gets the prefix for the category when using <see cref="HttpTracingDelegatingHandler{T}"/> (System.Net.Http.HttpClient).
+        /// Gets the prefix for the default logger category (System.Net.Http.HttpClient).
         /// </summary>
         public static readonly string LogCategoryPrefix = "System.Net.Http.HttpClient";
 
         /// <summary>
-        /// Gets the suffix for the category when using <see cref="HttpTracingDelegatingHandler{T}"/> (TraceHandler).
+        /// Gets the suffix for the default logger category (TraceHandler).
         /// </summary>
         public static readonly string LogCategorySuffix = "TraceHandler";
 

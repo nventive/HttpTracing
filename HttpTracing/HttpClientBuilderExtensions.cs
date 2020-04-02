@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net.Http;
 using HttpTracing;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -12,28 +11,33 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class HttpClientBuilderExtensions
     {
         /// <summary>
-        /// Adds and register <see cref="HttpTracingDelegatingHandler{T}"/> to enable tracing of requests/responses.
+        /// Adds a <see cref="HttpTracingDelegatingHandler"/> to enable tracing of requests/responses.
         /// </summary>
-        /// <typeparam name="TClient">
-        /// The type of the typed client.
-        /// Will determine the category of the logger (System.Net.Http.HttpClient.T.TraceHandler).
-        /// </typeparam>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="categoryName">
+        /// The category name to use for logging.
+        /// Defaults to "System.Net.Http.HttpClient.{HttpClient.Name}.TraceHandler".</param>
         /// <param name="isResponseSuccessful">
         /// A function to allow customization of the evaluation of a successful response.
         /// Defaults to <see cref="HttpResponseMessage.IsSuccessStatusCode"/>.
         /// </param>
         /// <returns>The updated <see cref="IHttpClientBuilder"/>.</returns>
-        public static IHttpClientBuilder AddHttpTracing<TClient>(this IHttpClientBuilder builder, Func<HttpResponseMessage, bool> isResponseSuccessful = null)
+        public static IHttpClientBuilder AddHttpTracing(this IHttpClientBuilder builder, string categoryName = null, Func<HttpResponseMessage, bool> isResponseSuccessful = null)
         {
             if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder.Services.TryAddTransient(sp => new HttpTracingDelegatingHandler<TClient>(sp.GetRequiredService<ILoggerFactory>(), isResponseSuccessful));
+            if (string.IsNullOrEmpty(categoryName))
+            {
+                categoryName = HttpTracingDelegatingHandler.LoggerCategory(builder.Name);
+            }
 
-            return builder.AddHttpMessageHandler<HttpTracingDelegatingHandler<TClient>>();
+            return builder.AddHttpMessageHandler(
+                sp => new HttpTracingDelegatingHandler(
+                    sp.GetRequiredService<ILoggerFactory>().CreateLogger(categoryName),
+                    isResponseSuccessful));
         }
     }
 }
