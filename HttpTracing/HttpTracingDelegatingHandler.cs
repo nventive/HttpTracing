@@ -13,17 +13,18 @@ namespace HttpTracing
     public class HttpTracingDelegatingHandler : DelegatingHandler
     {
         /// <summary>
-        /// Gets the prefix for the category when using <see cref="HttpTracingDelegatingHandler{T}"/> (System.Net.Http.HttpClient).
+        /// Gets the prefix for the default logger category (System.Net.Http.HttpClient).
         /// </summary>
         public static readonly string LogCategoryPrefix = "System.Net.Http.HttpClient";
 
         /// <summary>
-        /// Gets the suffix for the category when using <see cref="HttpTracingDelegatingHandler{T}"/> (TraceHandler).
+        /// Gets the suffix for the default logger category (TraceHandler).
         /// </summary>
         public static readonly string LogCategorySuffix = "TraceHandler";
 
         private readonly ILogger _logger;
         private readonly Func<HttpResponseMessage, bool> _isResponseSuccessful;
+        private readonly bool _bufferRequests;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpTracingDelegatingHandler"/> class.
@@ -33,12 +34,21 @@ namespace HttpTracing
         /// A function to allow customization of the evaluation of a successful response.
         /// Defaults to <see cref="HttpResponseMessage.IsSuccessStatusCode"/>.
         /// </param>
+        /// <param name="bufferRequests">
+        /// When set to true, will actively buffer the requests bodies.
+        /// This is to be used when you want to see the content of requests
+        /// when using serializer that are forward-only.
+        /// This will impact performance and memory consumption, but is probably fine if you are
+        /// in a typical run-of-the-mill scenario.
+        /// </param>
         public HttpTracingDelegatingHandler(
             ILogger logger,
-            Func<HttpResponseMessage, bool> isResponseSuccessful = null)
+            Func<HttpResponseMessage, bool> isResponseSuccessful = null,
+            bool bufferRequests = false)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _isResponseSuccessful = isResponseSuccessful ?? ((HttpResponseMessage response) => response.IsSuccessStatusCode);
+            _bufferRequests = bufferRequests;
         }
 
         /// <summary>
@@ -58,9 +68,27 @@ namespace HttpTracing
         /// <inheritdoc />
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             try
             {
+                if (_bufferRequests && request.Content != null)
+                {
+                    var newRequestContent = new StreamContent(
+                        await request.Content.ReadAsStreamAsync().ConfigureAwait(false));
+                    foreach (var requestHeader in request.Content.Headers)
+                    {
+                        newRequestContent.Headers.Add(requestHeader.Key, requestHeader.Value);
+                    }
+
+                    request.Content = newRequestContent;
+                }
+
                 var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
                 var isSuccessfull = _isResponseSuccessful(response);
 
                 if (isSuccessfull && _logger.IsEnabled(LogLevel.Trace))

@@ -24,14 +24,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 services
     .AddHttpClient<MyNamedClient>() // Adds a named HttpClient
-    .AddHttpTracing<MyNamedClient>(); // Attaches a named tracing handler.
+    .AddHttpTracing(); // Attaches a tracing handler.
 ```
 
 The tracing handler (`AddHttpTracing`) should probably be the last handler in the
 chain in order to capture all modifications done by other handlers if they exist.
 
 The logger category [follows the conventions defined by the `IHttpClientFactory`](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-2.2#logging)
-by naming the category `System.Net.Http.HttpClient.MyNamedClient.TraceHandler`.
+by naming the category `System.Net.Http.HttpClient.{HttpClient.Name}.TraceHandler`
+(e.g. `System.Net.Http.HttpClient.MyNamedClient.TraceHandler`).
 
 Event ids used for the various messages:
 
@@ -48,8 +49,16 @@ This can be customized when adding the handler:
 ```csharp
 services
     .AddHttpClient<MyNamedClient>()
-    .AddHttpTracing<MyNamedClient>(
-        response => response.StatusCode >= HttpStatusCode.InternalServerError);
+    .AddHttpTracing(
+        isResponseSuccessful: response => response.StatusCode >= HttpStatusCode.InternalServerError);
+```
+
+The logger category name can also be customized if needed:
+
+```csharp
+services
+    .AddHttpClient<MyNamedClient>()
+    .AddHttpTracing(categoryName: "Foo.Bar");
 ```
 
 ### Using with Application Insights
@@ -69,6 +78,26 @@ Example within the `appsettings.json` file:
   }
 }
 ```
+
+### Buffering the requests content
+
+Some frameworks uses `HttpContent` streams on `HttpRequestMessage` that cannot be replayed, thus preventing the component
+to read the body of the request in such cases.
+
+The default behavior is to write the following line in lieu of the body:
+```
+[InvalidOperationException: Request content is not buffered (...). Use the bufferRequests parameter to allow the reading.]
+```
+
+If you want to see the request content in such cases, use the `bufferRequests` parameter:
+
+```csharp
+services
+    .AddHttpClient<MyNamedClient>()
+    .AddHttpTracing(bufferRequests: true);
+```
+
+
 
 ## Changelog
 

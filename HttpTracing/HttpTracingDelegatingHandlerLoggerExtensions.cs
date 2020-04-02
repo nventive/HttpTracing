@@ -63,7 +63,7 @@ namespace HttpTracing
                 request.RequestUri,
                 $"HTTP/{request.Version}",
                 request.AllHeadersAsString(),
-                request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
+                await SafeContentAsString(request.Content).ConfigureAwait(false),
                 null);
         }
 
@@ -87,7 +87,7 @@ namespace HttpTracing
                 request.RequestUri,
                 $"HTTP/{request.Version}",
                 request.AllHeadersAsString(),
-                request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
+                await SafeContentAsString(request.Content).ConfigureAwait(false),
                 ex);
         }
 
@@ -136,6 +136,24 @@ namespace HttpTracing
                 response.AllHeadersAsString(),
                 response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync().ConfigureAwait(false),
                 ex);
+        }
+
+        private static async Task<string> SafeContentAsString(HttpContent content)
+        {
+            if (content is null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return await content.ReadAsStringAsync().ConfigureAwait(false);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // This is thrown when the content stream has already been consumed.
+                return $"[InvalidOperationException: Request content is not buffered ({ex.Message}). Use the bufferRequests parameter to allow the reading.]";
+            }
         }
     }
 }
