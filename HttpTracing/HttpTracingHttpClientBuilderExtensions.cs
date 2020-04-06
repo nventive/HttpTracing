@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// <see cref="IHttpClientBuilder"/> extension methods.
     /// </summary>
-    public static class HttpClientBuilderExtensions
+    public static class HttpTracingHttpClientBuilderExtensions
     {
         /// <summary>
         /// Adds a <see cref="HttpTracingDelegatingHandler"/> to enable tracing of requests/responses.
