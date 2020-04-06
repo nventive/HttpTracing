@@ -8,8 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Globally add tracing to all HttpClient instances (`AddHttpTracingToAllHttpClients`)
-
 ### Changed
 
 ### Deprecated
@@ -19,6 +17,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Security
+
+## 1.1.0
+
+### Added
+
+- Globally add tracing to all HttpClient instances (`AddHttpTracingToAllHttpClients`)
 
 ## 1.0.0
 
