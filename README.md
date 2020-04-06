@@ -99,7 +99,28 @@ services
     .AddHttpTracing(bufferRequests: true);
 ```
 
+### Adding globally
 
+It is possible to add tracing to **all** `HttpClient` registered through the `IHttpClientFactory`:
+
+```csharp
+services.AddHttpTracingToAllHttpClients();
+```
+
+This way, the tracing handler is added to all instances globally.
+To customize the parameters, use the factory configuration method:
+
+```csharp
+services.AddHttpTracingToAllHttpClients((sp, builder) =>
+{
+    return builder.Name switch
+    {
+        nameof(BufferedClient) => new HttpMessageHandlerTracingConfiguration { BufferRequests = true },
+        nameof(DisabledClient) => new HttpMessageHandlerTracingConfiguration { Enabled = false },
+        _ => null, // Default configuration
+    };
+})
+```
 
 ## Changelog
 
