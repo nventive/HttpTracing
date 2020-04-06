@@ -2,8 +2,8 @@
   <!-- Common properties for all projects -->
   <PropertyGroup>
     <Authors>nventive</Authors>
-    <Description>Component description</Description>
-    <Copyright>Copyright (c) 2019, nventive</Copyright>
+    <Description>Complete tracing of requests / responses for HttpClient</Description>
+    <Copyright>Copyright (c) 2020, nventive</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Product>HttpTracing</Product>
     <LangVersion>8.0</LangVersion>
@@ -12,6 +12,7 @@
     <NoWarn>1701;1702;1998</NoWarn>
     <TemplateVersion>1.0.0</TemplateVersion>
     <PackageIconUrl>https://nventive-email-assets.s3.amazonaws.com/packages/nv-package-logo%400%2C25x.png</PackageIconUrl>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://github.com/nventive/HttpTracing</PackageProjectUrl>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -30,6 +31,7 @@
   <ItemGroup>
     <Compile Include="..\GlobalSuppressions.cs" Link="Properties\GlobalSuppressions.cs" />
     <AdditionalFiles Include="..\stylecop.json" Link="Properties\stylecop.json" />
+    <None Include="..\icon.png" Pack="true" PackagePath="\" Link="Properties\icon.png"/>
   </ItemGroup>
 
 </Project>
