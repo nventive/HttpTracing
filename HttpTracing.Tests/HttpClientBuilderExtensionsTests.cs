@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,18 +37,6 @@ namespace HttpTracing.Tests
 
             Action act = () => provider.GetRequiredService<TypeTestClient>();
             act.Should().NotThrow();
-        }
-
-        [SuppressMessage("Microsoft.Performance", "CA1812: Avoid uninstantiated internal classes", Justification = "Test Registration Only")]
-        private class TypeTestClient
-        {
-            public TypeTestClient(
-                HttpClient client)
-            {
-                Client = client;
-            }
-
-            public HttpClient Client { get; }
         }
     }
 }

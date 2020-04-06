@@ -8,7 +8,7 @@ namespace HttpTracing
     /// <summary>
     /// <see cref="HttpRequestMessage"/> extension methods.
     /// </summary>
-    public static class HttpRequestMessageExtensions
+    public static class HttpTracingHttpRequestMessageExtensions
     {
         /// <summary>
         /// Returns all headers as a standard HTTP headers string.
