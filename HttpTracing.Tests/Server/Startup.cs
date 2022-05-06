@@ -7,12 +7,15 @@ namespace HttpTracing.Tests.Server
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc();
+            services.AddControllers();
         }
 
         public void Configure(IApplicationBuilder app)
         {
-            app.UseMvc();
+            app.UseEndpoints(opts =>
+            {
+                opts.MapControllers();
+            });
         }
     }
 }
